@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เกมพลิกการ์ดจับคู่สามเหลี่ยม ป.6</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#ef4444;--red-d:#b91c1c;--blue:#3b82f6;--blue-d:#1d4ed8;--ink:#1f2a44}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:'Prompt','Sarabun','Noto Sans Thai',system-ui,sans-serif;color:var(--ink);overflow:hidden;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+body{height:100dvh;background:linear-gradient(180deg,#8fd8ff 0%,#d9f3ff 55%,#fff3c4 100%)}
+#bg{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.bgt{position:absolute;clip-path:polygon(50% 0,0 100%,100% 100%);opacity:.35;animation:floaty linear infinite}
+@keyframes floaty{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-30px) rotate(25deg)}100%{transform:translateY(0) rotate(0)}}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;padding:14px;overflow:auto;z-index:2}
+.screen.active{display:flex;animation:fadeIn .35s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.panel{width:min(780px,100%);text-align:center;margin:auto}
+h1{font-size:clamp(32px,7.5vw,60px);margin:.2em 0;line-height:1.15;color:#ff6b00;text-shadow:3px 3px 0 #fff,6px 6px 0 rgba(0,0,0,.12)}
+h2{font-size:clamp(24px,5.5vw,40px);margin:.2em 0}
+p.sub{font-size:clamp(16px,3.6vw,24px);margin:.3em 0 .8em;font-weight:600}
+.btn{font:inherit;font-weight:700;font-size:clamp(20px,4.6vw,30px);min-height:64px;padding:12px 28px;border:0;border-radius:22px;color:#fff;cursor:pointer;box-shadow:0 7px 0 rgba(0,0,0,.22);transition:transform .1s,box-shadow .1s;margin:8px}
+.btn:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.22)}
+.btn.big{font-size:clamp(24px,6vw,38px);min-height:78px;padding:14px 40px}
+.green{background:#22c55e}.yellow{background:#f59e0b}.orange{background:#ff7a1a}.purple{background:#8b5cf6}.gray{background:#64748b}.red{background:var(--red)}.blue{background:var(--blue)}
+.logo{width:clamp(130px,28vw,190px);aspect-ratio:120/160;margin:0 auto 6px;border-radius:26px;overflow:hidden;border:6px solid #fff;box-shadow:0 10px 0 rgba(0,0,0,.15);animation:bob 2.4s ease-in-out infinite}
+.logo svg{width:100%;height:100%;display:block}
+@keyframes bob{50%{transform:translateY(-10px) rotate(2deg)}}
+.box{background:#fff;border-radius:26px;padding:18px 20px;box-shadow:0 8px 0 rgba(0,0,0,.12);text-align:left;font-size:clamp(16px,3.6vw,22px);line-height:1.6}
+.box ol{margin:6px 0;padding-left:1.4em}.box li{margin:6px 0}
+.chip{display:inline-block;padding:2px 12px;border-radius:999px;color:#fff;font-weight:700}
+.players{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:14px 0}
+.pcard{border-radius:28px;padding:20px;color:#fff;box-shadow:0 8px 0 rgba(0,0,0,.18)}
+.pcard .em{font-size:60px;line-height:1}
+.pcard h3{margin:6px 0 10px;font-size:clamp(22px,4.5vw,30px)}
+.pcard input{width:100%;font:inherit;font-size:clamp(20px,4.5vw,26px);padding:12px;border-radius:16px;border:4px solid #fff;text-align:center;color:var(--ink);outline:none}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin:16px 0}
+.opt{font:inherit;background:#fff;border:6px solid #fff;border-radius:30px;padding:18px;cursor:pointer;box-shadow:0 9px 0 rgba(0,0,0,.16);transition:transform .15s;color:var(--ink)}
+.opt:hover{transform:scale(1.03) rotate(-1deg)}.opt:active{transform:translateY(5px)}
+.opt svg{width:min(180px,50%);height:auto}
+.opt b{display:block;font-size:clamp(24px,5.5vw,34px);color:#ff6b00}
+.opt span{font-size:clamp(15px,3.3vw,20px)}
+.lv{display:block;width:100%;max-width:560px;margin:10px auto;text-align:left}
+.lv small{display:block;font-size:.6em;font-weight:600;opacity:.95}
+/* ---------- game ---------- */
+#s-game{padding:8px;align-items:stretch;overflow:hidden}
+.hud{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.pscore{border-radius:18px;color:#fff;padding:6px 12px;display:flex;align-items:center;justify-content:space-between;gap:6px;box-shadow:0 5px 0 rgba(0,0,0,.18);opacity:.7;transition:transform .25s}
+.pscore.active{opacity:1;transform:scale(1.05);outline:5px solid #fde047;animation:glow 1.2s infinite}
+@keyframes glow{50%{outline-color:#fff}}
+.pname{font-weight:700;font-size:clamp(14px,3.2vw,22px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.pnum{font-size:clamp(30px,7vw,50px);font-weight:700;line-height:1}
+.pnum small{font-size:.35em;font-weight:600;margin-left:3px}
+.ctrl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ic{width:clamp(38px,7vw,54px);height:clamp(38px,7vw,54px);border-radius:14px;border:0;font-size:clamp(18px,3.8vw,26px);background:#fff;box-shadow:0 4px 0 rgba(0,0,0,.2);cursor:pointer}
+.ic:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.2)}
+@media(max-width:560px){.ctrl{grid-template-columns:repeat(2,1fr)}}
+.banner{margin:8px 0 4px;text-align:center;padding:8px 12px;border-radius:16px;color:#fff;font-weight:700;font-size:clamp(15px,3.6vw,24px);box-shadow:0 5px 0 rgba(0,0,0,.18);transition:background .3s}
+#boardWrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#board{display:grid;justify-content:center;align-content:center}
+.foot{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap}
+.foot .btn{min-height:56px;margin:4px 8px 8px;padding:8px 26px}
+#left{font-weight:700;font-size:clamp(14px,3vw,20px);background:#fff;padding:6px 14px;border-radius:999px}
+.card{border:0;padding:0;background:none;perspective:800px;cursor:pointer;width:100%;height:100%;animation:deal .5s backwards}
+@keyframes deal{from{opacity:0;transform:translateY(-60px) scale(.5) rotate(-12deg)}}
+.inner{position:relative;width:100%;height:100%}
+.card.up .inner{animation:flipIn .4s}
+@keyframes flipIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.card:not(.up):not(.matched):hover .inner{transform:translateY(-4px)}
+.card.up .back{display:none}
+.face{position:absolute;inset:0;border-radius:14px;overflow:hidden;border:4px solid #fff;box-shadow:0 5px 0 rgba(0,0,0,.2)}
+.back svg{width:100%;height:100%;display:block}
+.num{position:absolute;bottom:5px;right:6px;background:rgba(255,255,255,.9);color:#ff6b00;font-weight:700;font-size:clamp(11px,2.4vw,17px);min-width:1.6em;text-align:center;border-radius:999px;padding:0 5px}
+.front{display:none;background:#fff;align-items:center;justify-content:center;border-color:#cbd5e1}
+.front .tri{width:100%;height:auto;max-height:100%}
+.cap{position:absolute;left:0;right:0;bottom:0;text-align:center;font-weight:700;font-size:clamp(10px,2.3vw,16px);color:#fff;padding:1px 2px;display:none}
+.card.up .front{display:flex;align-items:center;justify-content:center}
+.card.matched{cursor:default}
+.card.m0 .front{border-color:var(--red);background:#fff1f1;box-shadow:0 0 0 3px var(--red),0 0 18px rgba(239,68,68,.65)}
+.card.m1 .front{border-color:var(--blue);background:#eff6ff;box-shadow:0 0 0 3px var(--blue),0 0 18px rgba(59,130,246,.65)}
+.card.m0 .cap{display:block;background:var(--red)}.card.m1 .cap{display:block;background:var(--blue)}
+.card.shake .inner{animation:shake .45s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.card.pulse .inner{animation:pulse .7s}
+@keyframes pulse{0%,100%{transform:scale(1)}40%{transform:scale(1.15) rotate(3deg)}}
+.card.hl .inner{transform:translateY(-8px) scale(1.08);filter:drop-shadow(0 0 10px #fde047) brightness(1.1)}
+.conf{position:fixed;width:10px;height:14px;z-index:90;pointer-events:none;animation:conf 1s ease-out forwards}
+@keyframes conf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+.pop{position:fixed;z-index:91;font-weight:700;font-size:clamp(24px,6vw,44px);color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.3),0 0 10px #000;pointer-events:none;white-space:nowrap;animation:pop 1.3s forwards}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}20%{transform:translate(-50%,-80%) scale(1.2);opacity:1}100%{transform:translate(-50%,-220%) scale(1);opacity:0}}
+#ov{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:linear-gradient(180deg,#8fd8ff,#fff3c4);padding:16px}
+#ov.show{display:flex;animation:fadeIn .25s}
+#ov .box{text-align:center;max-width:520px;width:100%}
+/* end */
+.trophy{font-size:clamp(80px,22vw,150px);animation:bob 1.6s ease-in-out infinite;line-height:1.1}
+.final{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+.final div{border-radius:24px;color:#fff;padding:14px;box-shadow:0 7px 0 rgba(0,0,0,.18)}
+.final div.win{outline:6px solid #fde047;animation:glow 1s infinite;transform:scale(1.04)}
+.final b{font-size:clamp(40px,10vw,72px);display:block;line-height:1.1}
+.final span{font-size:clamp(14px,3.4vw,22px);font-weight:700;word-break:break-word}
+</style>
+</head>
+<body>
+<!-- sprite: การ์ดหลัง = พระอาทิตย์หน้าเด็กทารก -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+ <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6ec6ff"/><stop offset=".6" stop-color="#bfe9ff"/><stop offset="1" stop-color="#ffe0a0"/></linearGradient>
+ <radialGradient id="gSun" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#fffbd0"/><stop offset=".55" stop-color="#ffe066"/><stop offset="1" stop-color="#ffb21e"/></radialGradient>
+ <symbol id="sunbaby" viewBox="0 0 120 160">
+  <rect width="120" height="160" fill="url(#gSky)"/>
+  <g fill="#fff" opacity=".95"><ellipse cx="24" cy="24" rx="14" ry="6"/><ellipse cx="34" cy="20" rx="10" ry="7"/><ellipse cx="96" cy="44" rx="13" ry="5.5"/><ellipse cx="104" cy="40" rx="8" ry="6"/></g>
+  <g stroke="#ffb300" stroke-width="5" stroke-linecap="round">
+   <line x1="60" y1="38" x2="60" y2="26" transform="rotate(0 60 76)"/><line x1="60" y1="38" x2="60" y2="31" transform="rotate(30 60 76)"/>
+   <line x1="60" y1="38" x2="60" y2="26" transform="rotate(60 60 76)"/><line x1="60" y1="38" x2="60" y2="31" transform="rotate(90 60 76)"/>
+   <line x1="60" y1="38" x2="60" y2="26" transform="rotate(120 60 76)"/><line x1="60" y1="38" x2="60" y2="31" transform="rotate(150 60 76)"/>
+   <line x1="60" y1="38" x2="60" y2="26" transform="rotate(180 60 76)"/><line x1="60" y1="38" x2="60" y2="31" transform="rotate(210 60 76)"/>
+   <line x1="60" y1="38" x2="60" y2="26" transform="rotate(240 60 76)"/><line x1="60" y1="38" x2="60" y2="31" transform="rotate(270 60 76)"/>
+   <line x1="60" y1="38" x2="60" y2="26" transform="rotate(300 60 76)"/><line x1="60" y1="38" x2="60" y2="31" transform="rotate(330 60 76)"/>
+  </g>
+  <path d="M0 118 Q30 106 60 116 T120 112 V160 H0Z" fill="#7ed957"/>
+  <path d="M0 134 Q40 122 80 134 T120 130 V160 H0Z" fill="#4fbf4a"/>
+  <circle cx="60" cy="76" r="31" fill="url(#gSun)" stroke="#ffb21e" stroke-width="2"/>
+  <path d="M60 46 C55 37 65 36 62 42 M62 45 C69 39 73 46 66 48" stroke="#c57a1b" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <ellipse cx="50" cy="73" rx="3.2" ry="4.4" fill="#3b2a1a"/><ellipse cx="70" cy="73" rx="3.2" ry="4.4" fill="#3b2a1a"/>
+  <circle cx="51" cy="71.4" r="1.3" fill="#fff"/><circle cx="71" cy="71.4" r="1.3" fill="#fff"/>
+  <circle cx="41" cy="84" r="5.5" fill="#ff8fa3" opacity=".6"/><circle cx="79" cy="84" r="5.5" fill="#ff8fa3" opacity=".6"/>
+  <circle cx="60" cy="80" r="1.5" fill="#f2a24a"/>
+  <path d="M53 86 Q60 100 67 86 Z" fill="#d6455a"/><ellipse cx="60" cy="92" rx="3.4" ry="1.9" fill="#ff9aa8"/>
+  <g fill="#fff" opacity=".9"><circle cx="14" cy="64" r="1.8"/><circle cx="106" cy="86" r="1.8"/><circle cx="20" cy="100" r="1.4"/></g>
+ </symbol>
+</defs>
+</svg>
+
+<div id="bg"></div>
+
+<!-- 1 เริ่มเกม -->
+<section id="s-start" class="screen active"><div class="panel">
+ <div class="logo"><svg viewBox="0 0 120 160" preserveAspectRatio="xMidYMid slice"><use href="#sunbaby" width="120" height="160"/></svg></div>
+ <h1>เกมพลิกการ์ด<br>จับคู่สามเหลี่ยม</h1>
+ <p class="sub">คณิตศาสตร์ ชั้น ป.6 &nbsp;•&nbsp; <span class="chip red">ฝ่ายแดง</span> VS <span class="chip blue">ฝ่ายน้ำเงิน</span></p>
+ <button class="btn green big" id="btnStart">▶ เริ่มเกม</button><br>
+ <button class="btn yellow" id="btnHow">📖 วิธีเล่น</button>
+</div></section>
+
+<!-- วิธีเล่น -->
+<section id="s-how" class="screen"><div class="panel">
+ <h2>📖 วิธีเล่น</h2>
+ <div class="box">
+  <ol>
+   <li>ฝ่ายแดงกับฝ่ายน้ำเงิน <b>ผลัดกันเปิดการ์ดทีละ 2 ใบ</b> โดย <b>จิ้มเลือกการ์ดที่ต้องการได้เลย</b></li>
+   <li>ถ้าสามเหลี่ยม 2 ใบเป็น <b>ชนิดเดียวกัน</b> (แม้รูปร่างไม่เหมือนกันก็ได้) ได้ 1 คู่ การ์ดจะ <b>หงายค้างไว้ ขอบเป็นสีของฝ่ายตัวเอง</b> และได้ <b>สุ่มต่อ</b></li>
+   <li>ถ้าไม่ใช่ชนิดเดียวกัน การ์ดจะโชว์ <b>1 วินาที</b> แล้วคว่ำลง และเปลี่ยนเป็นตาของอีกฝ่าย</li>
+   <li>จำตำแหน่งการ์ดให้ดี! เมื่อการ์ดถูกจับคู่ครบทุกใบ <b>ฝ่ายที่ได้คู่มากที่สุดชนะ</b> 🏆</li>
+  </ol>
+  <b>ความรู้ที่ต้องใช้:</b><br>
+  • ตามมุม: <b>มุมแหลม</b> (ทุกมุมน้อยกว่า 90°) • <b>มุมฉาก</b> (มี 90°) • <b>มุมป้าน</b> (มีมุมมากกว่า 90°)<br>
+  • ตามด้าน: <b>ด้านเท่า</b> (เท่ากัน 3 ด้าน) • <b>หน้าจั่ว</b> (เท่ากัน 2 ด้าน) • <b>ด้านไม่เท่า</b> (ไม่เท่ากันเลย)
+ </div>
+ <button class="btn green big" data-go="players">▶ เริ่มเลย</button>
+ <button class="btn gray" data-go="start">⬅ กลับ</button>
+</div></section>
+
+<!-- 2 เพิ่มผู้เล่น -->
+<section id="s-players" class="screen"><div class="panel">
+ <h2>👫 เพิ่มผู้เล่น</h2>
+ <p class="sub">พิมพ์ชื่อผู้เล่นของแต่ละฝ่าย (ไม่พิมพ์ก็ได้)</p>
+ <div class="players">
+  <div class="pcard red"><div class="em">🔴</div><h3>ฝ่ายแดง</h3><input id="n0" maxlength="14" placeholder="ชื่อผู้เล่นฝ่ายแดง" autocomplete="off"></div>
+  <div class="pcard blue"><div class="em">🔵</div><h3>ฝ่ายน้ำเงิน</h3><input id="n1" maxlength="14" placeholder="ชื่อผู้เล่นฝ่ายน้ำเงิน" autocomplete="off"></div>
+ </div>
+ <button class="btn green big" id="btnPlayersOk">ต่อไป ➜</button>
+ <button class="btn gray" data-go="start">⬅ กลับ</button>
+</div></section>
+
+<!-- 3 เลือกประเภท -->
+<section id="s-mode" class="screen"><div class="panel">
+ <h2>🔺 เลือกประเภทสามเหลี่ยม</h2>
+ <div class="opts">
+  <button class="opt" data-mode="angle">
+   <svg viewBox="0 0 140 140"><polygon points="25,115 115,115 25,35" fill="#ffd6a5" stroke="#c2410c" stroke-width="4" stroke-linejoin="round"/><polygon points="25,115 47,115 47,93 25,93" fill="#fff" stroke="#1f2a44" stroke-width="3"/></svg>
+   <b>ชนิดตามมุม</b><span>มุมแหลม • มุมฉาก • มุมป้าน</span>
+  </button>
+  <button class="opt" data-mode="side">
+   <svg viewBox="0 0 140 140"><polygon points="20,115 120,115 70,30" fill="#c7f0d8" stroke="#15803d" stroke-width="4" stroke-linejoin="round"/><g stroke="#1f2a44" stroke-width="3"><line x1="40" y1="68" x2="50" y2="76"/><line x1="100" y1="68" x2="90" y2="76"/></g></svg>
+   <b>ชนิดตามด้าน</b><span>ด้านเท่า • หน้าจั่ว • ด้านไม่เท่า</span>
+  </button>
+ </div>
+ <button class="btn gray" data-go="players">⬅ กลับ</button>
+</div></section>
+
+<!-- ระดับ -->
+<section id="s-level" class="screen"><div class="panel">
+ <h2>⭐ เลือกระดับความยาก</h2>
+ <button class="btn green lv" data-level="0">⭐ ง่าย — การ์ด 10 ใบ<small>มีตัวเลขบอกขนาดมุม / ความยาวด้านช่วยคิด</small></button>
+ <button class="btn yellow lv" data-level="1">⭐⭐ ปานกลาง — การ์ด 14 ใบ<small>มีสัญลักษณ์ช่วย (มุมฉาก / ขีดบอกด้านเท่ากัน)</small></button>
+ <button class="btn red lv" data-level="2">⭐⭐⭐ ท้าทาย — การ์ด 20 ใบ<small>ไม่มีตัวช่วย ต้องสังเกตเอง</small></button>
+ <button class="btn gray" data-go="mode">⬅ กลับ</button>
+</div></section>
+
+<!-- เกม -->
+<section id="s-game" class="screen">
+ <header class="hud">
+  <div class="pscore red" id="p0"><span class="pname"></span><span class="pnum">0<small>คู่</small></span></div>
+  <div class="ctrl">
+   <button class="ic" id="bPause" title="หยุดชั่วคราว">⏸</button>
+   <button class="ic" id="bRestart" title="เล่นใหม่">🔄</button>
+   <button class="ic" id="bSound" title="เสียง">🔊</button>
+   <button class="ic" id="bHome" title="หน้าแรก">🏠</button>
+  </div>
+  <div class="pscore blue" id="p1"><span class="pname"></span><span class="pnum">0<small>คู่</small></span></div>
+ </header>
+ <div class="banner red" id="banner"></div>
+ <main id="boardWrap"><div id="board"></div></main>
+ <footer class="foot"><span id="left"></span></footer>
+</section>
+
+<!-- สรุปผล -->
+<section id="s-end" class="screen"><div class="panel">
+ <div class="trophy" id="trophy">🏆</div>
+ <h1 id="winTitle" style="font-size:clamp(28px,7vw,52px)"></h1>
+ <div class="final">
+  <div class="red" id="f0"><span></span><b>0</b>คู่</div>
+  <div class="blue" id="f1"><span></span><b>0</b>คู่</div>
+ </div>
+ <div class="box" style="margin-bottom:10px"><b>📌 สรุปความรู้</b><ul id="recap" style="margin:6px 0;padding-left:1.3em"></ul></div>
+ <button class="btn green" id="bAgain">🔁 เล่นรอบใหม่</button>
+ <button class="btn purple" id="bChange">⚙️ เลือกประเภท/ระดับใหม่</button>
+ <button class="btn gray" id="bHome2">🏠 หน้าแรก</button>
+</div></section>
+
+<!-- หยุดชั่วคราว / ยืนยัน -->
+<div id="ov"><div class="box"><h2 id="ovTitle"></h2><p id="ovText" style="margin:6px 0 10px"></p><div id="ovBtns"></div></div></div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+const MODES={
+ angle:{types:[
+  {n:'มุมแหลม',full:'สามเหลี่ยมมุมแหลม',d:'ทุกมุมน้อยกว่า 90°'},
+  {n:'มุมฉาก',full:'สามเหลี่ยมมุมฉาก',d:'มีมุมหนึ่งเท่ากับ 90° พอดี'},
+  {n:'มุมป้าน',full:'สามเหลี่ยมมุมป้าน',d:'มีมุมหนึ่งมากกว่า 90°'}]},
+ side:{types:[
+  {n:'ด้านเท่า',full:'สามเหลี่ยมด้านเท่า',d:'ด้านยาวเท่ากันทั้ง 3 ด้าน'},
+  {n:'หน้าจั่ว',full:'สามเหลี่ยมหน้าจั่ว',d:'ด้านยาวเท่ากัน 2 ด้าน'},
+  {n:'ด้านไม่เท่า',full:'สามเหลี่ยมด้านไม่เท่า',d:'ทั้ง 3 ด้านยาวไม่เท่ากัน'}]}
+};
+const LEVELS=[{pairs:5},{pairs:7},{pairs:10}];
+const DEF=['ฝ่ายแดง','ฝ่ายน้ำเงิน'];
+
+/* ---------- พื้นหลัง ---------- */
+(function(){const bg=$('#bg');const cols=['#ff9aa2','#ffd166','#95e1a3','#8ec5ff','#c3a6ff'];
+ for(let i=0;i<14;i++){const d=document.createElement('div');d.className='bgt';const s=rnd(40,110);
+  d.style.cssText=`width:${s}px;height:${s}px;left:${rnd(0,95)}%;top:${rnd(0,95)}%;background:${pick(cols)};animation-duration:${rnd(6,14)}s;animation-delay:-${rnd(0,10)}s`;bg.appendChild(d);}})();
+
+/* ---------- เสียง ---------- */
+let AC=null,soundOn=true;
+function tone(f,d,type,v,t0){if(!soundOn)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.value=f;const t=AC.currentTime+(t0||0);g.gain.setValueAtTime(v||.12,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d);}catch(e){}}
+const sfx={
+ flip:()=>tone(520,.08,'triangle',.12),
+ ok:()=>[660,880,1100].forEach((f,i)=>tone(f,.18,'sine',.14,i*.1)),
+ no:()=>{tone(300,.18,'sawtooth',.07);tone(210,.28,'sawtooth',.07,.16);},
+ win:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.25,'triangle',.15,i*.14)),
+ click:()=>tone(700,.06,'square',.05)
+};
+
+/* ---------- ตัวจับเวลา (หยุดได้) ---------- */
+let pending=[];
+function later(ms,fn){const t={rem:ms,start:performance.now(),id:0};t.run=()=>{pending=pending.filter(x=>x!==t);fn();};t.id=setTimeout(t.run,ms);pending.push(t);}
+function clearPending(){pending.forEach(t=>clearTimeout(t.id));pending=[];}
+function pausePending(){pending.forEach(t=>{clearTimeout(t.id);t.rem-=performance.now()-t.start;});}
+function resumePending(){pending.slice().forEach(t=>{t.start=performance.now();t.id=setTimeout(t.run,Math.max(0,t.rem));});}
+
+/* ---------- สร้างสามเหลี่ยม ไม่ซ้ำของเก่า ---------- */
+let used=new Set();
+try{const s=localStorage.getItem('triUsedV1');if(s)used=new Set(JSON.parse(s));}catch(e){}
+function saveUsed(){try{localStorage.setItem('triUsedV1',JSON.stringify([...used].slice(-4000)));}catch(e){}}
+
+function genRaw(mode,type){
+ if(mode==='angle'){
+  let A,B,C;
+  if(type===0){do{A=rnd(28,75);B=rnd(28,75);C=180-A-B;}while(C<28||C>75);}
+  else if(type===1){A=rnd(28,62);B=90-A;C=90;}
+  else{C=rnd(105,128);A=rnd(24,156-C);B=180-C-A;}
+  const ang=shuffle([A,B,C]),r=ang.map(d=>d*Math.PI/180);
+  const sc=Math.sin(r[2]),sb=Math.sin(r[1]);
+  return{key:ang.slice().sort((x,y)=>x-y).join('-'),pts:[[0,0],[sc,0],[sb*Math.cos(r[0]),sb*Math.sin(r[0])]],ang,lens:null,L:rnd(58,84)};
+ }
+ let s;
+ if(type===0){const v=rnd(3,15);s=[v,v,v];}
+ else if(type===1){
+  const a=rnd(3,15);let c,t=0;
+  do{c=rnd(2,15);t++;}while((Math.abs(c-a)<2||c>=1.7*a)&&t<60);
+  if(Math.abs(c-a)<2||c>=1.7*a)c=(a+2<1.7*a&&a+2<=15)?a+2:a-2;
+  s=[a,a,c];
+ }else{
+  let x,y,z;
+  do{[x,y,z]=[rnd(3,15),rnd(3,15),rnd(3,15)].sort((p,q)=>p-q);}while(y-x<2||z-y<2||z>=0.88*(x+y));
+  s=[x,y,z];
+ }
+ s=shuffle(s);
+ const x=(s[2]*s[2]+s[0]*s[0]-s[1]*s[1])/(2*s[0]);
+ const y=Math.sqrt(Math.max(s[2]*s[2]-x*x,0));
+ const mx=Math.max(...s);
+ return{key:s.slice().sort((p,q)=>p-q).join('-'),pts:[[0,0],[s[0],0],[x,y]],ang:null,lens:s,L:Math.min(84,44+(mx-3)*3.5)};
+}
+function finalize(raw,mode,type){
+ const th=Math.random()*Math.PI*2,fl=Math.random()<.5?-1:1;
+ let p=raw.pts.map(([x,y])=>{x*=fl;return[x*Math.cos(th)-y*Math.sin(th),x*Math.sin(th)+y*Math.cos(th)];});
+ let D=0;for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)D=Math.max(D,Math.hypot(p[i][0]-p[j][0],p[i][1]-p[j][1]));
+ const k=raw.L/D;p=p.map(([x,y])=>[x*k,y*k]);
+ const xs=p.map(q=>q[0]),ys=p.map(q=>q[1]);
+ const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
+ p=p.map(([x,y])=>[x-cx+70,y-cy+70]);
+ return{mode,type,pts:p,ang:raw.ang,lens:raw.lens,hue:rnd(0,359),svg:''};
+}
+function genTri(mode,type){
+ let raw,key,t=0;
+ for(;;){raw=genRaw(mode,type);key=mode+':'+type+':'+raw.key;t++;if(!used.has(key)||t>400)break;}
+ if(t>400){const pre=mode+':'+type+':';[...used].forEach(u=>{if(u.startsWith(pre))used.delete(u);});}
+ used.add(key);
+ return finalize(raw,mode,type);
+}
+
+/* ---------- วาดสามเหลี่ยม ---------- */
+function renderTri(t,level){
+ const P=t.pts,f=n=>n.toFixed(1);
+ const unit=v=>{const l=Math.hypot(v[0],v[1])||1;return[v[0]/l,v[1]/l];};
+ const sub=(a,b)=>[a[0]-b[0],a[1]-b[1]];
+ const txt=(x,y,str,size)=>`<text x="${f(x)}" y="${f(y)}" font-size="${size}" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#1f2a44" stroke="#fff" stroke-width="3" paint-order="stroke" stroke-linejoin="round" font-family="Prompt,Sarabun,sans-serif">${str}</text>`;
+ const cen=[(P[0][0]+P[1][0]+P[2][0])/3,(P[0][1]+P[1][1]+P[2][1])/3];
+ let s=`<svg class="tri" viewBox="0 0 140 140" aria-hidden="true">`;
+ s+=`<polygon points="${P.map(q=>f(q[0])+','+f(q[1])).join(' ')}" fill="hsl(${t.hue} 90% 80%)" stroke="hsl(${t.hue} 65% 32%)" stroke-width="3" stroke-linejoin="round"/>`;
+ if(t.mode==='angle'){
+  for(let i=0;i<3;i++){
+   const V=P[i],U=P[(i+1)%3],W=P[(i+2)%3],u=unit(sub(U,V)),v=unit(sub(W,V)),a=t.ang[i];
+   if(a===90&&level<=1){
+    const r=11,p1=[V[0]+u[0]*r,V[1]+u[1]*r],p2=[p1[0]+v[0]*r,p1[1]+v[1]*r],p3=[V[0]+v[0]*r,V[1]+v[1]*r];
+    s+=`<polygon points="${f(V[0])},${f(V[1])} ${f(p1[0])},${f(p1[1])} ${f(p2[0])},${f(p2[1])} ${f(p3[0])},${f(p3[1])}" fill="rgba(255,255,255,.75)" stroke="#1f2a44" stroke-width="2"/>`;
+   }else if(level===0){
+    const r=10,cr=u[0]*v[1]-u[1]*v[0],sw=cr>0?1:0;
+    s+=`<path d="M${f(V[0]+u[0]*r)} ${f(V[1]+u[1]*r)} A${r} ${r} 0 0 ${sw} ${f(V[0]+v[0]*r)} ${f(V[1]+v[1]*r)}" fill="none" stroke="#1f2a44" stroke-width="2"/>`;
+   }
+   if(level===0){
+    const b=unit([u[0]+v[0],u[1]+v[1]]),d=a<40?27:a<70?22:18;
+    s+=txt(V[0]+b[0]*d,V[1]+b[1]*d,a+'°',9.5);
+   }
+  }
+ }else if(level<=1){
+  const uniq=[...new Set(t.lens)].sort((a,b)=>a-b);
+  for(let i=0;i<3;i++){
+   const A=P[i],B=P[(i+1)%3],m=[(A[0]+B[0])/2,(A[1]+B[1])/2],d=unit(sub(B,A));
+   if(level===0){
+    let n=[-d[1],d[0]];if(n[0]*(m[0]-cen[0])+n[1]*(m[1]-cen[1])<0)n=[-n[0],-n[1]];
+    s+=txt(m[0]+n[0]*12,m[1]+n[1]*12,t.lens[i]+' ซม.',9.5);
+   }else{
+    const cnt=uniq.indexOf(t.lens[i])+1,nr=[-d[1],d[0]];
+    for(let j=0;j<cnt;j++){const off=(j-(cnt-1)/2)*5,cx=m[0]+d[0]*off,cy=m[1]+d[1]*off;
+     s+=`<line x1="${f(cx-nr[0]*5.5)}" y1="${f(cy-nr[1]*5.5)}" x2="${f(cx+nr[0]*5.5)}" y2="${f(cy+nr[1]*5.5)}" stroke="#1f2a44" stroke-width="2.4" stroke-linecap="round"/>`;}
+   }
+  }
+ }
+ return s+'</svg>';
+}
+
+/* ---------- สถานะเกม ---------- */
+const G={mode:'angle',level:0,names:DEF.slice(),cards:[],score:[0,0],combo:0,turn:0,first:null,lock:true,paused:false,over:false,left:0};
+function showScreen(id){$$('.screen').forEach(s=>s.classList.toggle('active',s.id==='s-'+id));}
+function openOv(title,text,btns){$('#ovTitle').textContent=title;$('#ovText').textContent=text;const w=$('#ovBtns');w.innerHTML='';
+ btns.forEach(b=>{const e=document.createElement('button');e.className='btn '+b.c;e.textContent=b.t;e.onclick=()=>{sfx.click();b.f();};w.appendChild(e);});$('#ov').classList.add('show');}
+function closeOv(){$('#ov').classList.remove('show');}
+
+function hud(){
+ [0,1].forEach(i=>{const e=$('#p'+i);e.querySelector('.pname').textContent=(i?'🔵 ':'🔴 ')+G.names[i];
+  e.querySelector('.pnum').firstChild.nodeValue=G.score[i];e.classList.toggle('active',G.turn===i&&!G.over);});
+ $('#left').textContent='เหลือการ์ด '+G.left+' ใบ';
+}
+function banner(t,team){const b=$('#banner');b.textContent=t;b.className='banner '+(team===0?'red':'blue');}
+function turnBanner(){banner('ตาของ '+(G.turn?'🔵 ':'🔴 ')+G.names[G.turn]+' — จิ้มเลือกการ์ดได้เลย 👆',G.turn);}
+
+function layout(){
+ const w=$('#boardWrap'),b=$('#board'),N=G.cards.length;if(!N)return;
+ const W=w.clientWidth-6,H=w.clientHeight-6,gap=Math.max(6,Math.min(W,H)*.02),R=0.78;
+ let best={s:0,c:2};
+ for(let c=2;c<=N;c++){const r=Math.ceil(N/c),cw=Math.min((W-gap*(c-1))/c,((H-gap*(r-1))/r)*R);if(cw>best.s)best={s:cw,c};}
+ b.style.gap=gap+'px';b.style.gridTemplateColumns=`repeat(${best.c},${best.s}px)`;b.style.gridAutoRows=`${best.s/R}px`;
+}
+window.addEventListener('resize',()=>{if($('#s-game').classList.contains('active'))layout();});
+
+function els(){return $$('#board .card');}
+function startRound(){
+ clearPending();closeOv();
+ const P=LEVELS[G.level].pairs;
+ let types=[];while(types.length<P)types.push(...shuffle([0,1,2]));types=types.slice(0,P);
+ let cards=[];
+ types.forEach(t=>{for(let k=0;k<2;k++)cards.push({type:t,tri:genTri(G.mode,t),up:false,owner:-1});});
+ cards=shuffle(cards);cards.forEach(c=>c.tri.svg=renderTri(c.tri,G.level));
+ saveUsed();
+ Object.assign(G,{cards,score:[0,0],combo:0,turn:Math.random()<.5?0:1,first:null,lock:true,paused:false,over:false,left:cards.length});
+ const board=$('#board');board.innerHTML='';
+ cards.forEach((c,i)=>{
+  const b=document.createElement('button');b.className='card';b.style.animationDelay=(i*45)+'ms';b.setAttribute('aria-label','การ์ดใบที่ '+(i+1));
+  b.innerHTML=`<div class="inner"><div class="face back"><svg viewBox="0 0 120 160" preserveAspectRatio="xMidYMid slice"><use href="#sunbaby" width="120" height="160"/></svg><span class="num">${i+1}</span></div><div class="face front">${c.tri.svg}<span class="cap"></span></div></div>`;
+  b.addEventListener('click',()=>onCard(i));board.appendChild(b);
+ });
+ hud();banner('🎴 กำลังแจกการ์ด...',G.turn);
+ requestAnimationFrame(layout);
+ later(500+cards.length*45,()=>{G.lock=false;turnBanner();});
+}
+
+function flipUp(i){G.cards[i].up=true;els()[i].classList.add('up');sfx.flip();}
+function flipDown(i){G.cards[i].up=false;const e=els()[i];e.classList.remove('up','shake');}
+
+function onCard(i){
+ if(G.lock||G.paused||G.over)return;
+ const c=G.cards[i];if(c.up||c.owner>=0)return;
+ flipUp(i);
+ if(G.first===null){G.first=i;banner('เปิดอีก 1 ใบ เพื่อหาคู่ที่เป็นชนิดเดียวกัน! 🤔',G.turn);return;}
+ G.lock=true;const a=G.first;
+ if(G.cards[a].type===c.type)onMatch(a,i);else onMiss(a,i);
+}
+function center(el){const r=el.getBoundingClientRect();return[r.left+r.width/2,r.top+r.height/2];}
+function onMatch(a,b){
+ const t=G.turn,E=els(),name=MODES[G.mode].types[G.cards[a].type].n;
+ [a,b].forEach(i=>{G.cards[i].owner=t;const e=E[i];e.classList.add('matched','m'+t,'pulse');e.querySelector('.cap').textContent=name;});
+ G.score[t]++;G.combo++;G.left-=2;G.first=null;sfx.ok();
+ const cols=t?['#3b82f6','#93c5fd','#fde047','#fff']:['#ef4444','#fca5a5','#fde047','#fff'];
+ const ca=center(E[a]),cb=center(E[b]);
+ burst(ca[0],ca[1],24,cols);burst(cb[0],cb[1],24,cols);
+ pop((ca[0]+cb[0])/2,(ca[1]+cb[1])/2,G.combo>=2?'🔥 ต่อเนื่อง ×'+G.combo+'!':'+1 คู่ 🎉');
+ hud();banner('ถูกต้อง! '+name+' 🎉 '+G.names[t]+' ได้เล่นต่อ',t);
+ later(900,()=>{if(G.left===0)finish();else{G.lock=false;turnBanner();}});
+}
+function onMiss(a,b){
+ const E=els();G.combo=0;sfx.no();
+ later(480,()=>{E[a].classList.add('shake');E[b].classList.add('shake');});
+ banner('ไม่ใช่ชนิดเดียวกัน 😅 ดูให้ดี แล้วจำไว้นะ',G.turn);
+ later(1450,()=>{ // โชว์ 1 วินาทีหลังพลิกเสร็จ แล้วคว่ำ
+  flipDown(a);flipDown(b);G.first=null;G.turn^=1;hud();
+  later(480,()=>{G.lock=false;turnBanner();});
+ });
+}
+
+function finish(){
+ G.over=true;G.lock=true;hud();
+ const s=G.score,tie=s[0]===s[1],w=s[0]>s[1]?0:1;
+ $('#trophy').textContent=tie?'🤝':'🏆';
+ $('#winTitle').textContent=tie?'เสมอกัน! เก่งทั้งสองฝ่าย 🎉':(w?'🔵 ':'🔴 ')+G.names[w]+' ชนะ!';
+ [0,1].forEach(i=>{const f=$('#f'+i);f.querySelector('span').textContent=(i?'🔵 ':'🔴 ')+G.names[i];f.querySelector('b').textContent=s[i];f.classList.toggle('win',!tie&&w===i);});
+ $('#recap').innerHTML=MODES[G.mode].types.map(t=>`<li><b>${t.full}</b> — ${t.d}</li>`).join('');
+ showScreen('end');sfx.win();
+ for(let k=0;k<12;k++)setTimeout(()=>burst(rnd(40,innerWidth-40),rnd(60,innerHeight*.6),22),k*260);
+}
+
+/* ---------- เอฟเฟกต์ ---------- */
+function burst(x,y,n,cols){
+ cols=cols||['#ef4444','#3b82f6','#fde047','#22c55e','#f97316','#a855f7'];
+ for(let i=0;i<(n||24);i++){const d=document.createElement('i');d.className='conf';d.style.left=x+'px';d.style.top=y+'px';d.style.background=pick(cols);
+  const ang=Math.random()*Math.PI*2,dist=60+Math.random()*130;
+  d.style.setProperty('--dx',Math.cos(ang)*dist+'px');d.style.setProperty('--dy',(Math.sin(ang)*dist+70)+'px');d.style.setProperty('--r',rnd(-720,720)+'deg');
+  document.body.appendChild(d);setTimeout(()=>d.remove(),1100);}
+}
+function pop(x,y,t){const p=document.createElement('div');p.className='pop';p.textContent=t;p.style.left=x+'px';p.style.top=y+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),1300);}
+
+/* ---------- หยุด / เล่นใหม่ / กลับ ---------- */
+function pauseGame(){if(G.paused)return;G.paused=true;pausePending();}
+function resumeGame(){closeOv();if(!G.paused)return;G.paused=false;resumePending();}
+function goHome(){clearPending();G.paused=false;G.over=false;closeOv();showScreen('start');}
+function doPause(){
+ if(G.over)return;pauseGame();
+ openOv('⏸ พักเกมก่อนนะ','เกมหยุดอยู่ กดเล่นต่อเมื่อพร้อม',[
+  {t:'▶ เล่นต่อ',c:'green',f:resumeGame},
+  {t:'🔄 เล่นใหม่',c:'orange',f:()=>{startRound();}},
+  {t:'🏠 กลับหน้าแรก',c:'gray',f:goHome}]);
+}
+function askRestart(){
+ if(G.over)return;pauseGame();
+ openOv('🔄 เล่นใหม่?','คะแนนจะเริ่มนับใหม่ รูปสามเหลี่ยมและตำแหน่งการ์ดจะเปลี่ยนใหม่',[
+  {t:'✔ เล่นใหม่',c:'green',f:()=>startRound()},{t:'✖ เล่นต่อ',c:'gray',f:resumeGame}]);
+}
+function askHome(){
+ if(G.over)return;pauseGame();
+ openOv('🏠 กลับหน้าแรก?','เกมที่กำลังเล่นอยู่จะหายไป',[
+  {t:'✔ กลับหน้าแรก',c:'green',f:goHome},{t:'✖ เล่นต่อ',c:'gray',f:resumeGame}]);
+}
+
+/* ---------- ปุ่มต่าง ๆ ---------- */
+$$('[data-go]').forEach(b=>b.addEventListener('click',()=>{sfx.click();showScreen(b.dataset.go);}));
+$('#btnStart').onclick=()=>{sfx.click();showScreen('players');};
+$('#btnHow').onclick=()=>{sfx.click();showScreen('how');};
+$('#btnPlayersOk').onclick=()=>{sfx.click();
+ G.names=[0,1].map(i=>$('#n'+i).value.trim().slice(0,14)||DEF[i]);showScreen('mode');};
+$$('[data-mode]').forEach(b=>b.addEventListener('click',()=>{sfx.click();G.mode=b.dataset.mode;showScreen('level');}));
+$$('[data-level]').forEach(b=>b.addEventListener('click',()=>{sfx.click();G.level=+b.dataset.level;showScreen('game');startRound();}));
+$('#bPause').onclick=doPause;$('#bRestart').onclick=askRestart;$('#bHome').onclick=askHome;
+$('#bSound').onclick=()=>{soundOn=!soundOn;$('#bSound').textContent=soundOn?'🔊':'🔇';sfx.click();};
+$('#bAgain').onclick=()=>{sfx.click();showScreen('game');startRound();};
+$('#bChange').onclick=()=>{sfx.click();showScreen('mode');};
+$('#bHome2').onclick=()=>{sfx.click();goHome();};
+})();
+</script>
+</body>
+</html>
